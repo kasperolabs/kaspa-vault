@@ -77,6 +77,9 @@ const ip = () => ({ 'X-Real-IP': `10.0.0.${++ipn}` });
 const g = await call('GET', '/v1/guardian', null, { Origin: 'https://kaspavault.com' });
 ok(g.status === 200 && g.data.pubkey === guardianKey.pub && g.data.minDelayDaa === DELAY.toString(), '/v1/guardian names the guardian key and the minimum delay');
 ok(g.headers.get('access-control-allow-origin') === '*', '/v1/guardian answers browsers (CORS)');
+ok(g.data.healthy === false && g.data.lastPoll === null, 'before its first poll the watcher says it is not healthy');
+await w.poll();
+ok((await call('GET', '/v1/guardian')).data.healthy === true, 'after a poll it says healthy');
 
 // ---- registrations the watcher must refuse ----
 const refused = async (body, code, what) => { const r = await call('POST', '/v1/register', body, ip()); ok(r.status >= 400 && r.data.code === code, `${what}: expected ${code}, got ${r.status} ${JSON.stringify(r.data)}`); };

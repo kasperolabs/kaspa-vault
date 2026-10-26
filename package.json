@@ -1,7 +1,7 @@
 {
   "name": "kaspa-vault",
   "version": "0.1.0",
-  "description": "A savings vault for Kaspa: covenants that only release after a delay, a watcher that alerts and rescues, and a drop-in widget. No server of ours in the money path.",
+  "description": "A savings vault for Kaspa: covenants that only release after a delay, a watcher that alerts and rescues, and a drop-in widget.",
   "main": "core/index.js",
   "scripts": {
     "test": "node test/spend.js && node test/lifecycle.js && node test/watcher.js && node test/wallet.js",
@@ -13,7 +13,8 @@
     "drill:local": "tools/drill-local.sh",
     "build:widget": "node tools/build-widget.js",
     "test:widget": "node tools/build-widget.js && node test/widget-e2e.js",
-    "demo": "node tools/serve.js"
+    "demo": "node tools/serve.js",
+    "test:site": "node tools/build-widget.js && node test/site-smoke.js"
   },
   "license": "MIT",
   "dependencies": {
@@ -35,5 +36,10 @@
   },
   "devDependencies": {
     "esbuild": "0.28.2"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kasperolabs/kaspa-vault"
+  },
+  "homepage": "https://kaspavault.com"
 }

@@ -23,6 +23,10 @@ Theming: set CSS variables on the element, e.g.
 `kaspa-vault { --kv-accent: #1a365d; --kv-font: Inter, sans-serif; }`
 (all of them are at the top of `src/style.js`).
 
+The header shows the watcher's status light, checked every 15 seconds: green (online and reading
+the network), amber (answering but behind), red (unreachable). While it isn't green, no new vault
+can be opened; existing vaults keep working and the page says what is missing.
+
 Event: `kaspa-vault-change`, `detail = { vaultAddress, vault, pending, spending }` (sompi as strings),
 after every refresh. Method: `element.refresh()`.
 

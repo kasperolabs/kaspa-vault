@@ -23,6 +23,9 @@ const sums = ['kaspa-vault.js', 'kaspa-vault.min.js'].map(f => {
     return { f, kb: (buf.length / 1024).toFixed(1), hex: crypto.createHash('sha256').update(buf).digest('hex'), sri: 'sha384-' + crypto.createHash('sha384').update(buf).digest('base64') };
 });
 fs.writeFileSync(path.join(out, 'SHA256SUMS'), sums.map(s => `${s.hex}  ${s.f}`).join('\n') + '\n');
-// the static site serves the minified bundle next to its page
-if (fs.existsSync(path.join(root, 'site'))) fs.copyFileSync(path.join(out, 'kaspa-vault.min.js'), path.join(root, 'site/kaspa-vault.min.js'));
+// the static site serves the minified bundle next to its pages, plus its own small script
+if (fs.existsSync(path.join(root, 'site'))) {
+    fs.copyFileSync(path.join(out, 'kaspa-vault.min.js'), path.join(root, 'site/kaspa-vault.min.js'));
+    await build({ ...common, entryPoints: [path.join(root, 'widget/src/site.js')], outfile: path.join(root, 'site/site.js'), minify: true });
+}
 for (const s of sums) console.log(`${s.f.padEnd(20)} ${s.kb.padStart(6)} KB  sha256 ${s.hex}\n${' '.repeat(29)}integrity="${s.sri}"`);

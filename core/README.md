@@ -1,8 +1,8 @@
 # core
 
 Everything a wallet, a page or a watcher needs to run a vault. Plain ES modules; runs in browsers
-and Node 18+. Three runtime dependencies: `@noble/secp256k1`, `@noble/hashes` (both audited, no
-dependencies of their own) and `kaspa-ksm` (the covenant manifest format). No WebAssembly, no
+and Node 18+. Runtime dependencies: `@noble/secp256k1`, `@noble/hashes`, `@scure/bip39` (audited, no
+dependencies beyond each other) and `kaspa-ksm` (the covenant manifest format). No WebAssembly, no
 compiler, no server of ours.
 
 | File | What |
@@ -14,6 +14,8 @@ compiler, no server of ours.
 | `vault.js` | `VaultClient`: snapshot, deposit, withdraw, release, merge, send onward, and the guardian's rescue and evacuate |
 | `provider.js` | `restProvider()` for any Kaspa REST API; bring your own provider to use your own node |
 | `card.js` | the vault card: public keys + delay + watcher, enough to rebuild and check the vault anywhere |
+| `wallet.js` | 12 recovery words (BIP39), the standard Kaspa path m/44'/111111'/0'/0/0, a password box (PBKDF2 + AES-GCM), backup-wallet proofs |
+| `provider-wrpc.js` | `wrpcJsonProvider()` for kaspad's JSON wRPC (your own node) |
 
 ## Using it in a wallet
 

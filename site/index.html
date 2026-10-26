@@ -3,25 +3,28 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kaspa Vault</title>
+<title>Kaspa Vault: savings that wait for you</title>
 <meta name="description" content="A savings vault for Kaspa. Taking money out takes a waiting time you choose, you get an email when it starts, and one button sends everything to your backup wallet instead.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 56'%3E%3Crect x='6' y='9' width='44' height='38' rx='7' fill='%23f0fdfa' stroke='%23134e4a' stroke-width='3'/%3E%3Ccircle cx='28' cy='28' r='9' fill='none' stroke='%23134e4a' stroke-width='3'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="site.css">
-<script type="module" src="kaspa-vault.min.js"></script>
+<link rel="stylesheet" href="/site.css">
+<script type="module" src="/kaspa-vault.min.js"></script>
 </head>
 <body>
 <header class="top">
-    <a class="brand" href="/">Kaspa Vault</a>
-    <span class="tag">Preview · use small amounts</span>
+    <a class="brand" href="/"><svg width="26" height="26" viewBox="0 0 56 56" fill="none" aria-hidden="true"><rect x="6" y="9" width="44" height="38" rx="7" fill="#f0fdfa" stroke="#134e4a" stroke-width="3.5"/><circle cx="28" cy="28" r="9" stroke="#134e4a" stroke-width="3.5"/></svg>Kaspa Vault</a>
+    <nav><a href="/" aria-current="page">Vault</a><a href="/how">How it works</a><a href="/verify">Verify</a><a href="/build">Run your own</a><a href="https://github.com/kasperolabs/kaspa-vault">GitHub</a></nav>
 </header>
 <main>
-    <kaspa-vault
-        watcher="https://watch.kaspavault.com"
-        guardian="45f27924281a099a68cc4d65c9a52aa1793a0c00e0c188ff0d09469f83826148">
-    </kaspa-vault>
+<kaspa-vault watcher="https://watch.kaspavault.com" guardian="45f27924281a099a68cc4d65c9a52aa1793a0c00e0c188ff0d09469f83826148"></kaspa-vault>
+<div class="points" style="padding:0;margin-top:18px">
+    <div><b>Only two ways out</b>To your spending wallet after the waiting time, or to your own backup wallet. Written into Kaspa itself.</div>
+    <div><b>An email the moment it starts</b>A separate watcher tells you. Not you? One button, and it all goes to your backup.</div>
+    <div><b>Your keys stay here</b>Made in your browser, never sent anywhere. <a href="/how">How it works</a></div>
+</div>
 </main>
 <footer>
-    Open source (MIT) by Kaspero Labs · nothing here is a bank or a custodian: the keys are made and kept in your browser.
+    Open source (MIT) · <a href="https://github.com/kasperolabs/kaspa-vault">github.com/kasperolabs/kaspa-vault</a> · made by <a href="https://kasperolabs.com">Kaspero Labs</a><br>
+    Not a bank and not a custodian: your keys are made and kept in your browser. Preview: use amounts you can afford to test with.
 </footer>
 </body>
 </html>

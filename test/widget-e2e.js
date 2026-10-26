@@ -72,6 +72,8 @@ try {
     await page.goto('http://127.0.0.1:8080/demo/');
     await kv('.kv-btn').filter({ hasText: 'Open a vault' }).waitFor();
     ok((await text()).includes('safe deposit box'), 'welcome page shows');
+    await kv('.kv-ws-online').waitFor();
+    ok((await kv('.kv-ws').innerText()).includes('Watcher online'), 'the watcher light is green when the watcher reads the chain');
     await shot('01-welcome');
 
     // ---------- step 1: the wallet ----------
@@ -294,6 +296,23 @@ try {
     const rec2 = await page.evaluate(() => JSON.parse(localStorage.getItem('kaspa-vault-devworld')));
     ok(rec2.card.addresses.vault === rec.card.addresses.vault, 'restore from the backup file opens the same vault');
     await shot('13-restored');
+
+    // ---------- the watcher goes dark ----------
+    const dark = await ctx.newPage();
+    await dark.route('http://127.0.0.1:7399/**', r => r.abort());
+    await dark.goto('http://127.0.0.1:8080/demo/');
+    await dark.locator('kaspa-vault .kv-ws-offline').waitFor();
+    const darkText = await dark.locator('kaspa-vault .kv').innerText();
+    ok(darkText.includes('Watcher offline') && darkText.includes('Your money is safe'), 'watcher offline: red light, and the vault page says the money is safe and what is missing');
+    await dark.locator('kaspa-vault .kv-ws').click();
+    ok((await dark.locator('kaspa-vault .kv-sheet').innerText()).includes("can't do"), 'the light explains what the watcher can and cannot do');
+    await dark.evaluate(() => localStorage.removeItem('kaspa-vault-devworld'));
+    await dark.reload();
+    await dark.locator('kaspa-vault .kv-ws-offline').waitFor();
+    ok(await dark.locator('kaspa-vault button').filter({ hasText: 'Open a vault' }).isDisabled(), 'with the watcher offline, no new vault can be opened');
+    if (SHOTS) await dark.screenshot({ path: path.join(SHOTS, '15-watcher-offline.png') });
+    await dark.close();
+    await page.evaluate(r => localStorage.setItem('kaspa-vault-devworld', JSON.stringify(r)), rec2);
 
     // ---------- phone width ----------
     await page.setViewportSize({ width: 380, height: 900 });

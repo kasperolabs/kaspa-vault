@@ -12,7 +12,8 @@ const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; ch
 http.createServer((req, res) => {
     let p = decodeURIComponent(new URL(req.url, 'http://x').pathname);
     if (p.endsWith('/')) p += 'index.html';
-    const file = path.join(root, p);
+    let file = path.join(root, p);
+    if (!path.extname(file) && fs.existsSync(file + '.html')) file += '.html';     // /site/how -> how.html, like Cloudflare Pages
     if (!file.startsWith(root + path.sep) || /node_modules|\.env|data\//.test(file)) { res.writeHead(404); return res.end('not found'); }
     fs.readFile(file, (err, buf) => {
         if (err) { res.writeHead(404); return res.end('not found'); }

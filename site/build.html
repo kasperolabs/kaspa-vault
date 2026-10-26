@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Run your own Kaspa Vault</title>
+<meta name="description" content="Put a Kaspa Vault on your website, run your own watcher, or build the vault into your wallet app.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 56'%3E%3Crect x='6' y='9' width='44' height='38' rx='7' fill='%23f0fdfa' stroke='%23134e4a' stroke-width='3'/%3E%3Ccircle cx='28' cy='28' r='9' fill='none' stroke='%23134e4a' stroke-width='3'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/site.css">
+<script type="module" src="/site.js"></script>
+</head>
+<body>
+<header class="top">
+    <a class="brand" href="/"><svg width="26" height="26" viewBox="0 0 56 56" fill="none" aria-hidden="true"><rect x="6" y="9" width="44" height="38" rx="7" fill="#f0fdfa" stroke="#134e4a" stroke-width="3.5"/><circle cx="28" cy="28" r="9" stroke="#134e4a" stroke-width="3.5"/></svg>Kaspa Vault</a>
+    <nav><a href="/">Vault</a><a href="/how">How it works</a><a href="/verify">Verify</a><a href="/build" aria-current="page">Run your own</a><a href="https://github.com/kasperolabs/kaspa-vault">GitHub</a></nav>
+</header>
+<main>
+<h1>Run your own</h1>
+<p class="lead">Everything here is open source (MIT). Use this site, or run the whole thing yourself: three paths, pick one.</p>
+
+<h2>1. Put a vault on your website</h2>
+<div class="card">
+    <p>One file and one tag. Download <code>kaspa-vault.min.js</code> from a <a href="https://github.com/kasperolabs/kaspa-vault/releases">release</a> (or build it, see <a href="/verify">Verify</a>), host it next to your page, and add:</p>
+<pre><code>&lt;script type="module" src="/kaspa-vault.min.js"&gt;&lt;/script&gt;
+&lt;kaspa-vault
+    watcher="https://watch.kaspavault.com"
+    guardian="45f27924281a099a68cc4d65c9a52aa1793a0c00e0c188ff0d09469f83826148"&gt;
+&lt;/kaspa-vault&gt;</code></pre>
+    <p style="margin-top:12px">Always set <code>guardian</code>: it pins the watcher's key, so if the watcher's server were ever swapped, your page refuses to create vaults instead of trusting the new key. Use any watcher from the list below, or your own. Colors follow CSS variables (<code>--kv-accent</code>, <code>--kv-font</code>…). Details: <a href="https://github.com/kasperolabs/kaspa-vault/tree/main/widget">widget/README.md</a>.</p>
+    <p class="muted">Recommended: serve the page with a strict Content-Security-Policy that allows only your watcher and the Kaspa API. This site's own <a href="https://github.com/kasperolabs/kaspa-vault/blob/main/site/_headers">_headers</a> is a ready example.</p>
+</div>
+
+<h2>2. Run a watcher</h2>
+<div class="card">
+    <p>A watcher is what makes vaults safe to use: it emails owners and holds the one key that can rescue their vaults to their own backup wallets. More watchers, run by different people, make the whole system sturdier.</p>
+    <ol class="steps">
+        <li><b>A small Linux server</b> with Node.js 18+, nginx and a domain name. 1 GB of memory is plenty.</li>
+        <li><b>A Kaspa node</b> of your own (best), or the public REST API as a fallback.</li>
+        <li><b>A mail account</b> of its own, for the alerts.</li>
+        <li><b>Install and make the key:</b> <code>node gen-key.js</code>. Back the key up offline in two places; it is what rescues vaults if the server dies.</li>
+        <li><b>Check, run, publish:</b> <code>node node-check.js</code>, then pm2, nginx and a certificate. Then do the mainnet drill with a few KAS.</li>
+    </ol>
+    <p>The full guide: <a href="https://github.com/kasperolabs/kaspa-vault/tree/main/watcher">watcher/README.md</a>. Each watcher has its own key, and a vault is bound to the watcher it was made with.</p>
+</div>
+
+<h2>3. Put the vault in your wallet app</h2>
+<div class="card">
+    <p>The core library builds vaults, transactions and signatures with no server and no compiler. Your wallet already has the user's key; the vault needs only its public half.</p>
+<pre><code>import { buildVault, makeCard, VaultClient, restProvider, keySigner } from 'kaspa-vault';
+
+const pair = buildVault({ hot, guardian, rescue, delayDaa: '864000' });  // three public keys
+const card = makeCard({ ...pair, watcher: { url: 'https://watch.kaspavault.com' } });    // the user's backup
+const vault = new VaultClient(pair, { provider: restProvider() });
+
+await vault.deposit({ signer, amount });   // wallet -> vault
+await vault.withdraw({ signer });          // vault -> waiting room (the watcher emails)
+await vault.release();                     // after the waiting time, no key needed</code></pre>
+    <p style="margin-top:12px">Register the vault with a watcher (<code>POST /v1/register</code>, signed by the vault's key) so the owner gets alerts. Until the npm package is published, import from the repository's <code>core/</code>. Details: <a href="https://github.com/kasperolabs/kaspa-vault/tree/main/core">core/README.md</a>.</p>
+</div>
+
+<h2>Watchers</h2>
+<div class="card">
+    <table class="watchers">
+        <tr><th>Watcher</th><th>Run by</th><th>Status</th></tr>
+        <tr><td><code>watch.kaspavault.com</code><br><span class="muted">key 45f27924281a099a…</span></td><td>Kaspero Labs</td><td><span data-watcher="https://watch.kaspavault.com" data-guardian="45f27924281a099a68cc4d65c9a52aa1793a0c00e0c188ff0d09469f83826148"></span></td></tr>
+    </table>
+    <p class="muted" style="margin-top:12px">Running one? <a href="https://github.com/kasperolabs/kaspa-vault/issues">Open an issue</a> with its URL and key to be listed here.</p>
+</div>
+
+</main>
+<footer>
+    Open source (MIT) · <a href="https://github.com/kasperolabs/kaspa-vault">github.com/kasperolabs/kaspa-vault</a> · made by <a href="https://kasperolabs.com">Kaspero Labs</a><br>
+    Not a bank and not a custodian: your keys are made and kept in your browser. Preview: use amounts you can afford to test with.
+</footer>
+</body>
+</html>

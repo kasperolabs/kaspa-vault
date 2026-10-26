@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verify a Kaspa Vault</title>
+<meta name="description" content="Check a Kaspa Vault card in your browser, and check the code this website serves.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 56'%3E%3Crect x='6' y='9' width='44' height='38' rx='7' fill='%23f0fdfa' stroke='%23134e4a' stroke-width='3'/%3E%3Ccircle cx='28' cy='28' r='9' fill='none' stroke='%23134e4a' stroke-width='3'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/site.css">
+<script type="module" src="/site.js"></script>
+</head>
+<body>
+<header class="top">
+    <a class="brand" href="/"><svg width="26" height="26" viewBox="0 0 56 56" fill="none" aria-hidden="true"><rect x="6" y="9" width="44" height="38" rx="7" fill="#f0fdfa" stroke="#134e4a" stroke-width="3.5"/><circle cx="28" cy="28" r="9" stroke="#134e4a" stroke-width="3.5"/></svg>Kaspa Vault</a>
+    <nav><a href="/">Vault</a><a href="/how">How it works</a><a href="/verify" aria-current="page">Verify</a><a href="/build">Run your own</a><a href="https://github.com/kasperolabs/kaspa-vault">GitHub</a></nav>
+</header>
+<main>
+<h1>Verify</h1>
+<p class="lead">Don't trust this site; check it. Both checks run in your browser.</p>
+
+<h2>Check a vault</h2>
+<div class="card">
+    <p>Choose a vault card or a backup file. From a backup file only the card part is read; the recovery words are never looked at or sent anywhere.</p>
+    <input type="file" id="card-file" accept=".json,application/json">
+    <div id="vault-result" hidden></div>
+</div>
+<p class="muted">What this proves: the vault and waiting-room addresses really are the published contracts with these keys, which key can rescue the vault (the watcher's), and where an emergency sends the money (the backup wallet).</p>
+<span hidden data-known-watcher="https://watch.kaspavault.com" data-name="watch.kaspavault.com" data-key="45f27924281a099a68cc4d65c9a52aa1793a0c00e0c188ff0d09469f83826148"></span>
+
+<h2 id="lost">Lost access to your vault?</h2>
+<div class="card">
+    <p>If you can't open your vault any more (no words, no backup file, no browser), the watcher can still send everything to your backup wallet. It emails a rescue link, but only to an address already confirmed for that vault.</p>
+    <label class="muted" for="lost-addr">Vault address</label>
+    <input class="field" id="lost-addr" placeholder="kaspa:p…" autocomplete="off" spellcheck="false">
+    <label class="muted" for="lost-email">Your confirmed email</label>
+    <input class="field" id="lost-email" type="email" placeholder="you@example.com" autocomplete="email">
+    <p class="row" style="margin-top:12px"><button class="btn" id="lost-go">Email me a rescue link</button></p>
+    <div id="lost-result"></div>
+</div>
+
+<h2>Check this website</h2>
+<div class="card">
+    <p>The vault code this site is serving right now has this fingerprint (SHA-256 of <code>kaspa-vault.min.js</code>):</p>
+    <span class="hash" id="served-hash">calculating…</span>
+    <p>Build the same file yourself from the public source and compare. The build is reproducible: the same source always gives the same fingerprint.</p>
+<pre><code>git clone https://github.com/kasperolabs/kaspa-vault
+cd kaspa-vault && npm ci
+npm run build:widget        # prints the SHA-256 of widget/dist/kaspa-vault.min.js</code></pre>
+    <p class="muted" style="margin-top:12px">If the two differ, this site is not serving the published code. Don't use it, and tell us.</p>
+</div>
+
+<h2>Check the contracts</h2>
+<div class="card">
+    <p>The contracts are compiled into byte templates once, with SilverScript's own compiler, and the repository proves the templates equal the compiler's output for thousands of random keys (<code>npm run test:equality</code>). From a vault card's .ksm files, <code>npx kaspa-ksm@1.0.2 verify</code> checks them without any website.</p>
+</div>
+
+</main>
+<footer>
+    Open source (MIT) · <a href="https://github.com/kasperolabs/kaspa-vault">github.com/kasperolabs/kaspa-vault</a> · made by <a href="https://kasperolabs.com">Kaspero Labs</a><br>
+    Not a bank and not a custodian: your keys are made and kept in your browser. Preview: use amounts you can afford to test with.
+</footer>
+</body>
+</html>

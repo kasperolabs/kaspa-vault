@@ -28,6 +28,14 @@ a { color: inherit; }
 .kv-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .kv-title { margin: 0; font-size: 24px; font-weight: 700; color: var(--kv-ink); letter-spacing: -0.01em; }
 .kv-sub { margin: 2px 0 0; font-size: 14px; color: var(--kv-muted); }
+.kv-head-r { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.kv-ws { display: inline-flex; align-items: center; gap: 7px; border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 600; border: 1px solid; cursor: pointer; white-space: nowrap; background: #fff; }
+.kv-ws-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.kv-ws-online { color: #15803d; border-color: #bbf7d0; background: #f0fdf4; }
+.kv-ws-online .kv-ws-dot { box-shadow: 0 0 0 3px rgba(34, 197, 94, .2); }
+.kv-ws-stale { color: #b45309; border-color: #fde68a; background: #fffbeb; }
+.kv-ws-offline { color: #b91c1c; border-color: #fecaca; background: #fef2f2; }
+.kv-ws-checking { color: var(--kv-muted); border-color: var(--kv-line); }
 .kv-net { font-size: 12px; font-weight: 600; color: var(--kv-warn-ink); background: var(--kv-warn-bg); border: 1px solid var(--kv-warn-line); border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
 
 .kv-card { background: var(--kv-card); border: 1px solid var(--kv-line); border-radius: var(--kv-radius); padding: 22px; margin-bottom: 14px; }

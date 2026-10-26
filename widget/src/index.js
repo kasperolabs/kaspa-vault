@@ -102,7 +102,7 @@ function randomHex(n) { return K.bytesToHex(globalThis.crypto.getRandomValues(ne
 
 // ---------- the element ----------
 export class KaspaVault extends HTMLElement {
-    #root; #secret = { words: null, priv: null, until: 0 }; #draft = null; #shown = null; #timer = null; #refreshing = null; #releasing = false;
+    #root; #secret = { words: null, priv: null, until: 0 }; #draft = null; #shown = null; #timer = null; #wtimer = null; #refreshing = null; #releasing = false;
 
     constructor() {
         super();
@@ -127,7 +127,7 @@ export class KaspaVault extends HTMLElement {
         document.addEventListener('visibilitychange', this._vis);
     }
     disconnectedCallback() {
-        clearInterval(this.#timer);
+        clearInterval(this.#timer); clearInterval(this.#wtimer);
         document.removeEventListener('visibilitychange', this._vis);
         this.#forget();
     }
@@ -200,7 +200,8 @@ export class KaspaVault extends HTMLElement {
                 return this.#paint();
             }
             this.#paint();
-            this.#loadGuardian().then(() => this.#paint()).catch(e => { this.s.guardianProblem = e.message; this.#paint(); });
+            this.#checkWatcher().then(() => this.#paint());
+            this.#watchWatcher();
             await this.refresh();
             this.#timer = setInterval(() => { if (document.visibilityState === 'visible') this.refresh(); }, REFRESH_MS);
             return;
@@ -209,10 +210,15 @@ export class KaspaVault extends HTMLElement {
             await this.#loadGuardian();
             this.s.phase = 'welcome';
         } catch (e) {
-            this.s.phase = 'error';
-            this.s.error = e.message;
+            if (e.code === 'WATCHER_DOWN') this.s.phase = 'welcome';
+            else { this.s.phase = 'error'; this.s.error = e.message; }
         }
         this.#paint();
+        this.#watchWatcher();
+    }
+    #watchWatcher() {
+        clearInterval(this.#wtimer);
+        this.#wtimer = setInterval(() => { if (document.visibilityState === 'visible') this.#checkWatcher(); }, 15000);
     }
 
     async #loadGuardian() {
@@ -220,12 +226,26 @@ export class KaspaVault extends HTMLElement {
         if (!url) throw new Error('This page has no watcher set (the watcher attribute).');
         let g;
         try { g = await (await fetch(`${url}/v1/guardian`, { cache: 'no-store' })).json(); }
-        catch (e) { throw new Error(`The watcher at ${url} cannot be reached right now. Nothing was created; try again later.`); }
+        catch (e) { this.s.ws = { state: 'offline', at: Date.now() }; throw Object.assign(new Error(`The watcher at ${url} cannot be reached right now. Nothing was created; try again later.`), { code: 'WATCHER_DOWN' }); }
         if (!/^[0-9a-f]{64}$/.test(String(g.pubkey))) throw new Error('The watcher did not name its key.');
         const pinned = (this.getAttribute('guardian') || '').trim().toLowerCase();
         if (pinned && pinned !== g.pubkey) throw new Error(`The watcher answered with key ${g.pubkey.slice(0, 12)}…, but this page expects ${pinned.slice(0, 12)}…. Nothing was created. If you run this page, check the guardian attribute.`);
         this.s.guardian = g;
+        // healthy is false when it answers but has not read the chain lately; older watchers omit it
+        this.s.ws = { state: g.healthy === false ? 'stale' : 'online', lastPoll: g.lastPoll || null, at: Date.now() };
         return g;
+    }
+    /** The watcher's status light, re-checked every 15 seconds on every screen. */
+    async #checkWatcher() {
+        const before = JSON.stringify(this.s.ws || {});
+        try { await this.#loadGuardian(); this.s.guardianProblem = null; }
+        catch (e) { if (e.code !== 'WATCHER_DOWN') this.s.guardianProblem = e.message; }
+        if (JSON.stringify(this.s.ws || {}) !== before && !this.s.sheet && !this.#typing()) this.#paint();
+    }
+    #watcherPill() {
+        const st = (this.s.ws && this.s.ws.state) || 'checking';
+        const label = { checking: 'Checking the watcher…', online: 'Watcher online', stale: 'Watcher is behind', offline: 'Watcher offline' }[st];
+        return `<button class="kv-ws kv-ws-${st}" data-act="sheet" data-sheet="watcher" title="What does this mean?"><span class="kv-ws-dot"></span>${label}</button>`;
     }
 
     /** Re-read balances and the watcher. Safe to call any time. */
@@ -272,7 +292,7 @@ export class KaspaVault extends HTMLElement {
         const net = this.network !== 'mainnet' ? `<span class="kv-net">${esc(this.network)}</span>` : '';
         const keep = this.#keepInputs();
         this.#root.innerHTML = `<style>${STYLE}</style><div class="kv">
-            <div class="kv-head"><div><h1 class="kv-title">Vault</h1><p class="kv-sub">Money you don't want to spend by accident.</p></div>${net}</div>
+            <div class="kv-head"><div><h1 class="kv-title">Vault</h1><p class="kv-sub">Money you don't want to spend by accident.</p></div><div class="kv-head-r">${net}${s.phase === 'error' ? '' : this.#watcherPill()}</div></div>
             ${body}
             <p class="kv-small-print">kaspa-vault ${VERSION} · open source · your keys stay in this browser</p>
         </div>${s.sheet ? this.#sheetHtml() : ''}${s.toast ? `<div class="kv-toast ${s.toast.bad ? 'kv-toast-bad' : ''}" role="status">${esc(s.toast.text)}</div>` : ''}`;
@@ -317,10 +337,11 @@ export class KaspaVault extends HTMLElement {
                 <div><b>2. A backup wallet</b>Kasware, Kastle or Kaspire. Emergencies go there, nowhere else.</div>
                 <div><b>3. A waiting time</b>The time you have to say "this wasn't me".</div>
             </div>
-            <div class="kv-gap"><button class="kv-btn" data-act="setup-start">Open a vault</button></div>
+            ${this.s.ws && this.s.ws.state !== 'online' ? `<div class="kv-warn">${this.s.ws.state === 'offline' ? 'The watcher can\'t be reached right now.' : 'The watcher is not reading the network right now.'} A new vault needs it to send your alerts, so opening one waits until it is back. Vaults that already exist are safe meanwhile.</div>` : ''}
+            <div class="kv-gap"><button class="kv-btn" data-act="setup-start" ${this.s.ws && this.s.ws.state === 'online' ? '' : 'disabled'}>Open a vault</button></div>
             <p class="kv-center kv-gap"><button class="kv-link" data-act="restore-start">I already have a vault (recovery words and vault card)</button></p>
         </div>
-        <p class="kv-center kv-muted">Watched by ${esc(g ? g.name : this.watcherUrl)}</p>`;
+        <p class="kv-center kv-muted">Watcher: ${esc(g ? g.name : this.watcherUrl)}</p>`;
     }
 
     // ---------- setup ----------
@@ -423,7 +444,8 @@ export class KaspaVault extends HTMLElement {
         const info = opened.info;
         const day = dayWord(info.delayDaa);
         let banners = '';
-        if (this.s.watcherDown) banners += `<div class="kv-banner">${icon.bell}<div><b>The watcher can't be reached right now</b>Your money is safe and taking it out still works; alerts wait until the watcher is back.</div></div>`;
+        const ws = this.s.ws && this.s.ws.state;
+        if (this.s.watcherDown || ws === 'offline' || ws === 'stale') banners += `<div class="kv-banner">${icon.bell}<div><b>${ws === 'stale' ? 'The watcher is not reading the network right now' : "The watcher can't be reached right now"}</b>Your money is safe: it can still only go to your spending wallet after the waiting time, or to your backup wallet. Until the watcher is back, nobody emails you when a withdrawal starts.</div></div>`;
         else if (this.s.watched === false && !rec.email) banners += `<div class="kv-banner">${icon.bell}<div><b>Alerts are off</b>Nobody will email you when a withdrawal starts. Turn alerts on before you put money in.<br><button class="kv-btn kv-btn-small" data-act="sheet" data-sheet="alerts">Turn on alerts</button></div></div>`;
         else if (this.s.watched === false) banners += `<div class="kv-banner">${icon.bell}<div><b>Confirm your email to turn on alerts</b>We sent a link to ${esc(rec.email)}. Alerts start when you press it. Nothing there? Check spam, or <button class="kv-link" data-act="sheet" data-sheet="alerts">send it again</button>.</div></div>`;
         const g = this.s.guardian;
@@ -568,6 +590,14 @@ export class KaspaVault extends HTMLElement {
                 <div class="kv-note"><b>The watcher</b> (${esc(this.s.guardian ? this.s.guardian.name : this.watcherUrl)}) emails you the moment a withdrawal starts. If it wasn't you, its button moves everything to your backup wallet. Its key can't send money anywhere else.</div>
                 <div class="kv-note"><b>If someone steals your vault's wallet,</b> all they can do is start the ${esc(day)} clock. You get the email and press the button.</div>
                 <div class="kv-note"><b>If this website disappears,</b> your 12 words and the vault card work the vault from any Kaspa tool. The watcher still finishes withdrawals and sends alerts.</div>
+                ${close('Close')}`;
+        } else if (sh.kind === 'watcher') {
+            const ws = this.s.ws || {}, g = this.s.guardian;
+            const ago = ws.lastPoll ? Math.max(0, Math.round((Date.now() - Date.parse(ws.lastPoll)) / 1000)) : null;
+            h = `<h3>${{ online: 'The watcher is online', stale: 'The watcher is behind', offline: 'The watcher is offline' }[ws.state] || 'Checking the watcher'}</h3>
+                <p class="kv-muted">${esc(g ? g.name : this.watcherUrl)}${ago != null ? ` · last read the network ${ago < 90 ? `${ago} seconds` : `${Math.round(ago / 60)} minutes`} ago` : ''}</p>
+                <div class="kv-note"><b>What the watcher does:</b> it emails you the moment a withdrawal starts, gives you the button that sends everything to your backup wallet, and finishes withdrawals after the waiting time.</div>
+                <div class="kv-note"><b>What it can't do:</b> move money anywhere except your own backup wallet. If it is offline, vaults stay locked exactly as before; you only miss the email until it is back. This page also finishes your withdrawals by itself when it is open.</div>
                 ${close('Close')}`;
         } else if (sh.kind === 'remove') {
             h = `<h3>Remove the vault from this browser?</h3>

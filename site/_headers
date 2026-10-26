@@ -4,5 +4,5 @@
   Referrer-Policy: no-referrer
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
   Cross-Origin-Opener-Policy: same-origin
-/kaspa-vault.min.js
+/*.js
   Cache-Control: public, max-age=300

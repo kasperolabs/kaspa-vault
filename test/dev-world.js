@@ -44,6 +44,7 @@ const provider = wrpcJsonProvider({ url: kaspad.url, WebSocket });
 const mailer = createMailer(cfg);
 const w = createWatcher({ cfg, provider, mailer, store: openStore(dataDir), log: { log: m => console.log(m), error: (...a) => console.error(...a) } });
 http.createServer(w.handle).listen(7399, '127.0.0.1');
+await w.poll();                                  // healthy from the first page load
 setInterval(() => w.poll(), cfg.pollMs);
 if (argv.includes('--realtime')) setInterval(() => chain.advance(10n), 1000);
 

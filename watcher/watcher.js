@@ -16,7 +16,7 @@
 //     checked again before every signature).
 //
 // HTTP:
-//   GET  /v1/guardian                   public facts the vault builder needs (CORS)
+//   GET  /v1/guardian                   public facts the vault builder needs, and whether it reads the chain (CORS)
 //   POST /v1/register                   { card, email, time, signature }   (CORS)
 //   GET  /v1/status/:vaultAddress       { watched } (CORS)
 //   POST /v1/lost                       { vaultAddress, email }: email a rescue link to a confirmed address (CORS)
@@ -291,7 +291,15 @@ export function createWatcher({ cfg, provider, mailer, store, log = console }) {
                 if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
             }
             if (req.method === 'GET' && p === '/health') return json(res, 200, { ok: !state.pollFailures, name: cfg.name, version: cfg.version, network: cfg.network, guardian: cfg.guardianPub, watching: store.watched().length, lastPoll: state.lastPoll, pollFailures: state.pollFailures, lastPollError: state.lastPollError, nodes: provider.name, startedAt: state.startedAt });
-            if (req.method === 'GET' && p === '/v1/guardian') return json(res, 200, { pubkey: cfg.guardianPub, network: cfg.network, name: cfg.name, version: cfg.version, minDelayDaa: cfg.minDelayDaa.toString(), publicUrl: cfg.publicUrl, siteUrl: cfg.siteUrl, release: cfg.release });
+            if (req.method === 'GET' && p === '/v1/guardian') {
+                // healthy = it read the chain recently; pages show it as the watcher's status light
+                const age = state.lastPoll ? Date.now() - Date.parse(state.lastPoll) : null;
+                return json(res, 200, {
+                    pubkey: cfg.guardianPub, network: cfg.network, name: cfg.name, version: cfg.version, minDelayDaa: cfg.minDelayDaa.toString(),
+                    publicUrl: cfg.publicUrl, siteUrl: cfg.siteUrl, release: cfg.release,
+                    lastPoll: state.lastPoll, pollMs: cfg.pollMs, healthy: age != null && age < cfg.pollMs * 3 + 10000
+                });
+            }
             if (req.method === 'POST' && p === '/v1/register') {
                 let body;
                 try { body = JSON.parse(await readBody(req)); } catch (e) { if (e.status) throw e; throw fail(400, 'JSON', 'Send JSON'); }

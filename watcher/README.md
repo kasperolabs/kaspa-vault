@@ -127,7 +127,7 @@ without `--dry`. It can only pay that vault's backup wallet.
 
 | | |
 |---|---|
-| `GET /v1/guardian` | guardian pubkey, network, minimum delay (CORS) |
+| `GET /v1/guardian` | guardian pubkey, network, minimum delay, and `healthy` / `lastPoll` for status lights (CORS) |
 | `POST /v1/register` | `{ card, email, time, signature }`, the hot key's signature over `registrationMessage()` from `core/card.js` (CORS) |
 | `GET /v1/status/:vault` | `{ watched }` (CORS) |
 | `POST /v1/lost` | `{ vaultAddress, email }`: emails a rescue link to a confirmed address; same answer either way (CORS) |

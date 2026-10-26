@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How Kaspa Vault works</title>
+<meta name="description" content="How a Kaspa Vault keeps savings safe: a waiting time, a watcher that emails you, and a backup wallet only you control.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 56'%3E%3Crect x='6' y='9' width='44' height='38' rx='7' fill='%23f0fdfa' stroke='%23134e4a' stroke-width='3'/%3E%3Ccircle cx='28' cy='28' r='9' fill='none' stroke='%23134e4a' stroke-width='3'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/site.css">
+<script type="module" src="/site.js"></script>
+</head>
+<body>
+<header class="top">
+    <a class="brand" href="/"><svg width="26" height="26" viewBox="0 0 56 56" fill="none" aria-hidden="true"><rect x="6" y="9" width="44" height="38" rx="7" fill="#f0fdfa" stroke="#134e4a" stroke-width="3.5"/><circle cx="28" cy="28" r="9" stroke="#134e4a" stroke-width="3.5"/></svg>Kaspa Vault</a>
+    <nav><a href="/">Vault</a><a href="/how" aria-current="page">How it works</a><a href="/verify">Verify</a><a href="/build">Run your own</a><a href="https://github.com/kasperolabs/kaspa-vault">GitHub</a></nav>
+</header>
+<main>
+<h1>How it works</h1>
+<p class="lead">A vault is a Kaspa address with rules attached. The rules are part of the address itself, so no website, company or watcher can change them, including us.</p>
+
+<h2>The rule</h2>
+<div class="card"><p style="font-size:17px;margin:0">Money in the vault can go to exactly two places: <b>your spending wallet, after a waiting time</b> you chose, or <b>your backup wallet, at any time</b>. Nowhere else, no matter who asks.</p></div>
+
+<h2>Three keys, three jobs</h2>
+<div class="keys">
+    <div class="card"><h3>Your vault's wallet</h3><p class="muted">Made in your browser from 12 recovery words. It can start a withdrawal, and spend what has landed. It can't skip the waiting time.</p></div>
+    <div class="card"><h3>The watcher</h3><p class="muted">A small server that reads the network. It emails you when a withdrawal starts. Its key can only send money to your backup wallet.</p></div>
+    <div class="card"><h3>Your backup wallet</h3><p class="muted">A wallet you already have (Kasware, Kastle, Kaspire). It only receives, in an emergency.</p></div>
+</div>
+
+<h2>Taking money out</h2>
+<ol class="steps">
+    <li><b>You press "Take money out".</b> The money leaves the vault into a waiting room on the network.</li>
+    <li><b>The watcher emails you</b>, usually within a minute.</li>
+    <li><b>If it was you,</b> do nothing. After the waiting time it lands in your spending wallet.</li>
+    <li><b>If it wasn't you,</b> press the button in the email. Everything in the waiting room and everything still in the vault goes to your backup wallet.</li>
+</ol>
+<p class="muted">So someone who steals your vault's wallet can only start the clock. You get the email and press the button.</p>
+
+<h2>What if…</h2>
+<details><summary>…this website disappears?</summary><p>Your money stays in the vault. Your backup file (the 12 words and the vault card) opens it on any copy of this site, and the two contract files (.ksm) work with any Kaspa tool. The code is <a href="https://github.com/kasperolabs/kaspa-vault">public</a>; anyone can host it.</p></details>
+<details><summary>…the watcher goes offline?</summary><p>The vault stays locked exactly as before: the same two ways out, the same waiting time. What you miss is the email and the button until it's back. The light at the top of the vault shows the watcher's status at all times. Withdrawals still finish after the waiting time: the vault page finishes them itself when it's open.</p></details>
+<details><summary>…someone gets my 12 words?</summary><p>They can start a withdrawal, which starts the waiting time and sends you the email. Press "This was not me": everything goes to your backup wallet. Then open a new vault with new words.</p></details>
+<details><summary>…I lose my 12 words?</summary><p>While this browser still has your vault, open "Recovery words" with your password and save them again. If the words, the backup file and the browser are all gone, the watcher can still move everything to your backup wallet: ask for a rescue link on the <a href="/verify#lost">Verify</a> page with your vault address and your confirmed email. That's why the backup wallet's own words matter most.</p></details>
+<details><summary>…I lose access to my backup wallet?</summary><p>Then the emergency route goes nowhere you can reach. Take your money out the normal way and open a new vault with a backup wallet you control.</p></details>
+<details><summary>Can Kaspero Labs or the watcher take my money?</summary><p>No. The watcher's key can only send to your own backup wallet, and nobody but you ever has your vault's words. You can <a href="/verify">check your vault</a> yourself.</p></details>
+<details><summary>What does it cost?</summary><p>Nothing to us. The Kaspa network charges a small fee per move, usually well under 0.01 KAS.</p></details>
+<details><summary>Is it audited?</summary><p>Not by an outside firm yet. The contracts are short and public, every path was run on Kaspa's own script engine, and the whole flow was tested on mainnet with real KAS. Still: start with amounts you can afford to lose while the project is young.</p></details>
+
+<h2>The contracts</h2>
+<p>Two SilverScript contracts, about 70 lines together: <a href="https://github.com/kasperolabs/kaspa-vault/blob/main/contracts/vault_v1.sil">vault_v1.sil</a> and <a href="https://github.com/kasperolabs/kaspa-vault/blob/main/contracts/airlock_v2.sil">airlock_v2.sil</a>. They were first used in production by Kasla, then released on their own.</p>
+
+</main>
+<footer>
+    Open source (MIT) · <a href="https://github.com/kasperolabs/kaspa-vault">github.com/kasperolabs/kaspa-vault</a> · made by <a href="https://kasperolabs.com">Kaspero Labs</a><br>
+    Not a bank and not a custodian: your keys are made and kept in your browser. Preview: use amounts you can afford to test with.
+</footer>
+</body>
+</html>
