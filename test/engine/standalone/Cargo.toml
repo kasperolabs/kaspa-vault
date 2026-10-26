@@ -1,0 +1,17 @@
+# Runs test/engine/consensus.rs against rusty-kaspa at the exact tag mainnet nodes run (v2.1.0).
+#   cd test/engine/standalone && VAULT_FIXTURES=$PWD/../fixtures.json cargo test -- --nocapture
+[package]
+name = "kaspa-vault-consensus-check"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dev-dependencies]
+kaspa-consensus-core = { git = "https://github.com/kaspanet/rusty-kaspa", tag = "v2.1.0" }
+kaspa-txscript = { git = "https://github.com/kaspanet/rusty-kaspa", tag = "v2.1.0" }
+serde_json = "1.0"
+faster-hex = "0.10"
+
+[features]
+default = ["v2_1_0"]
+v2_1_0 = []

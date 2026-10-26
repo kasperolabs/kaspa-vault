@@ -12,8 +12,6 @@
 //                      -1 -> OP_1NEGATE, otherwise little-endian sign-magnitude bytes with the
 //                      shortest push opcode (OP_DATA_n)
 
-'use strict';
-
 const HEX = /^[0-9a-f]*$/;
 const INT_MIN = -(2n ** 63n) + 1n;
 const INT_MAX = 2n ** 63n - 1n;
@@ -101,4 +99,4 @@ function fill(template, values) {
     return out;
 }
 
-module.exports = { encodeParam, fill, scriptNumBytes, pubkeyHex };
+export { encodeParam, fill, scriptNumBytes, pubkeyHex };

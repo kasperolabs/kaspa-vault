@@ -14,11 +14,9 @@
 // release pays the hot key, the delay is the one asked for, the dispatch tags are the pinned ones.
 // A template that ever produced anything else would throw here instead of creating a vault.
 
-'use strict';
-
-const ksm = require('kaspa-ksm');
-const tpl = require('./template');
-const TEMPLATES = require('../contracts/templates.json');
+import ksm from 'kaspa-ksm';
+import * as tpl from './template.js';
+import TEMPLATES from './templates.js';
 
 const NETWORKS = ['mainnet', 'testnet-10', 'testnet-11'];
 const MIN_DELAY_DAA = 100n;                  // 10 seconds: tests only. Sites set their own floor (config.minDelayDaa)
@@ -132,4 +130,5 @@ function describe({ airlock, vault }) {
     };
 }
 
-module.exports = { buildVault, check, describe, keyOf, TAGS, MIN_DELAY_DAA, MAX_DELAY_DAA, templates: TEMPLATES };
+const templates = TEMPLATES;
+export { buildVault, check, describe, keyOf, TAGS, MIN_DELAY_DAA, MAX_DELAY_DAA, templates };

@@ -9,18 +9,17 @@
 //
 // Needs silverc (./silverc, --silverc or SILVERC_PATH). Usage: node test/compiler-equality.js [N]
 
-'use strict';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import crypto from 'crypto';
+import { execFileSync } from 'child_process';
+import { fileURLToPath } from 'url';
+import ksm from 'kaspa-ksm';
+import * as tpl from '../core/template.js';
+import * as contracts from '../core/contracts.js';
 
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
-const crypto = require('crypto');
-const { execFileSync } = require('child_process');
-const ksm = require('kaspa-ksm');
-const tpl = require('../core/template');
-const contracts = require('../core/contracts');
-
-const ROOT = path.join(__dirname, '..');
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const argv = process.argv.slice(2);
 const opt = n => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : null; };
 const SILVERC = opt('--silverc') || process.env.SILVERC_PATH || path.join(ROOT, 'silverc');

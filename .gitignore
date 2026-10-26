@@ -1,2 +1,4 @@
 silverc
 node_modules/
+test/engine/standalone/target/
+test/engine/standalone/Cargo.lock
