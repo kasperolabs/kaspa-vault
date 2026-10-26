@@ -143,16 +143,24 @@ try {
     ok((await kv('.kv-spend-amt').innerText()).startsWith('10.00'), 'Kasware funded the spending wallet: 10 KAS');
 
     // ---------- the vault card must be saved before money goes in ----------
-    ok(await kv('button').filter({ hasText: 'Add money' }).isDisabled() && (await text()).includes('Save your vault card'), 'Add money waits until the vault card is saved');
+    ok(await kv('button').filter({ hasText: 'Add money' }).isDisabled() && (await text()).includes('Save your backup'), 'Add money waits until the backup is saved');
     const dl = page.waitForEvent('download');
-    await kv('.kv-banner button').filter({ hasText: 'Download vault card' }).click();
-    const card = JSON.parse(fs.readFileSync(await (await dl).path(), 'utf8'));
-    ok(card.addresses.vault === rec.card.addresses.vault, 'the downloaded card is this vault');
+    await kv('.kv-banner button').filter({ hasText: 'Download backup file' }).click();
+    const backupFile = JSON.parse(fs.readFileSync(await (await dl).path(), 'utf8'));
+    ok(backupFile.card.addresses.vault === rec.card.addresses.vault && backupFile.words === words, 'the backup file holds this vault card and the 12 words');
     ok(!(await kv('button').filter({ hasText: 'Add money' }).isDisabled()), 'after saving it, Add money is open');
 
     // ---------- deposit (a double click sends one transaction) ----------
     const before = (await ctl('/ledger')).length;
     await click('Add money');
+    ok((await kv('.kv-tab').allInnerTexts()).join('|') === 'From Kasware|Any wallet or exchange|From spending wallet', 'Add money offers Kasware, any wallet (vault address), and the spending wallet');
+    await click('Any wallet or exchange', '.kv-tab');
+    ok((await kv('.kv-sheet').innerText()).includes(rec.card.addresses.vault) && (await kv('.kv-sheet .kv-qr-box svg').count()) === 1, 'any wallet: the vault address with a QR code');
+    await click('From spending wallet', '.kv-tab');
+    await kv('[name=amount]').fill('9.8');
+    await kv('button').filter({ hasText: 'Add to vault' }).click();
+    await until(async () => (await kv('[data-err]').innerText()).includes('0.5 KAS'), 'small change explained');
+    ok((await kv('[data-err]').innerText()).includes('All of it'), 'an amount that leaves dust behind is explained, with the way out');
     await click('All of it');
     await shot('07-add');
     await kv('button').filter({ hasText: 'Add to vault' }).dblclick();
@@ -181,7 +189,7 @@ try {
     ok(!(await text()).includes('on its way') && (await kv('.kv-spend-amt').innerText()).startsWith('9.9'), 'after the waiting time it landed in the spending wallet');
 
     // ---------- deposit again, then "Didn't start this?" ----------
-    await click('Add money'); await click('All of it'); await click('Add to vault');
+    await click('Add money'); await click('From spending wallet', '.kv-tab'); await click('All of it'); await click('Add to vault');
     await until(async () => (await kv('.kv-pstep-done').count()) === 3, 'second deposit'); await click('Done');
     await until(async () => (await kv('.kv-amt').innerText()).startsWith('9.9'), 'second deposit in vault');
     await click('Take money out'); await click('Start taking out'); await click('Done');
@@ -200,6 +208,13 @@ try {
     await page.evaluate(() => document.querySelector('kaspa-vault').refresh());
     await until(async () => (await kv('.kv-amt').innerText()).startsWith('0.00') && !(await text()).includes('on its way'), 'vault empty after rescue');
     ok((await kv('.kv-amt').innerText()).startsWith('0.00'), 'vault and waiting are empty after the rescue');
+
+    // ---------- straight from Kasware into the vault ----------
+    await click('Add money');
+    await kv('[name=ksAmount]').fill('3');
+    await click('Send from Kasware');
+    await until(async () => (await kv('.kv-amt').innerText()).startsWith('3.00'), 'direct deposit');
+    ok((await kv('.kv-amt').innerText()).startsWith('3.00') && (await kv('.kv-spend-amt').innerText()).startsWith('0.00'), 'Kasware sends straight into the vault, the spending wallet is not involved');
 
     // ---------- send ----------
     await ctl('/fund', { address: rec.card.addresses.hot, kas: '5' });
@@ -268,11 +283,16 @@ try {
     await kv('[name=pw1]').fill('another pass'); await kv('[name=pw2]').fill('another pass');
     await click('Open my vault');
     ok((await text()).includes("don't open this vault"), "someone else's words do not open the vault");
-    await kv('[name=words]').fill(words);
+    const backupPath = path.join(process.env.TMPDIR || '/tmp', 'kv-e2e-backup.json');
+    fs.writeFileSync(backupPath, JSON.stringify(backupFile));
+    await kv('[name=cardFile]').setInputFiles(backupPath);
+    await until(async () => (await kv('[name=words]').inputValue()) === words, 'backup file fills the words');
+    ok((await kv('[name=words]').inputValue()) === words, 'the backup file fills in the words by itself');
+    await kv('[name=backupMine]').check();
     await click('Open my vault');
     await kv('.kv-balance').waitFor();
     const rec2 = await page.evaluate(() => JSON.parse(localStorage.getItem('kaspa-vault-devworld')));
-    ok(rec2.card.addresses.vault === rec.card.addresses.vault, 'restore from the vault card and the words opens the same vault');
+    ok(rec2.card.addresses.vault === rec.card.addresses.vault, 'restore from the backup file opens the same vault');
     await shot('13-restored');
 
     // ---------- phone width ----------

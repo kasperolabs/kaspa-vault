@@ -1143,7 +1143,7 @@ a { color: inherit; }
 .kv-btn-line:hover:not(:disabled) { background: var(--kv-accent-soft); filter: none; }
 .kv-btn-quiet { background: transparent; border-color: transparent; color: var(--kv-muted); font-weight: 500; }
 .kv-btn-quiet:hover:not(:disabled) { color: var(--kv-ink); filter: none; }
-.kv-btn-small { width: auto; padding: 8px 14px; font-size: 14px; border-radius: 10px; }
+.kv-btn-small { white-space: nowrap; flex: none; width: auto; padding: 8px 14px; font-size: 14px; border-radius: 10px; }
 .kv-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
 .kv-link { background: none; border: 0; padding: 0; color: var(--kv-muted); font-size: 13px; cursor: pointer; text-decoration: none; }
 .kv-link:hover { color: var(--kv-accent); text-decoration: underline; }
@@ -1241,6 +1241,9 @@ a { color: inherit; }
 .kv-amt-in input { font: inherit; font-size: 34px; font-weight: 700; border: 0; outline: 0; width: 100%; color: var(--kv-ink); background: transparent; font-variant-numeric: tabular-nums; }
 .kv-amt-in span { font-size: 18px; color: var(--kv-muted); font-weight: 600; }
 .kv-amt-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 26px; margin-bottom: 10px; }
+.kv-tabs { display: flex; gap: 6px; background: var(--kv-bg); border-radius: 12px; padding: 4px; margin: 10px 0 12px; }
+.kv-tab { flex: 1; border: 0; background: transparent; border-radius: 9px; padding: 8px 6px; font-size: 13px; font-weight: 600; color: var(--kv-muted); cursor: pointer; }
+.kv-tab-on { background: #fff; color: var(--kv-ink); box-shadow: 0 1px 3px rgba(15,23,42,.12); }
 .kv-note { font-size: 14px; line-height: 1.5; background: var(--kv-bg); border-radius: 12px; padding: 12px 14px; margin: 10px 0; }
 .kv-note b { color: var(--kv-ink); }
 .kv-pick { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; max-height: 40vh; overflow: auto; }
@@ -8805,6 +8808,7 @@ function friendly(e) {
   if (c === "NO_COINS") return "There is nothing there to move yet.";
   if (c === "SPENT") return "The network already moved these coins. Refreshing.";
   if (c === "SEQUENCE_LOCK") return "The waiting time is not over yet.";
+  if (c === "AMOUNT" && e.max != null) return `That would leave less than 0.5 KAS behind, which the network does not keep. Press "All of it" to move everything, or move at most ${kas(e.max > 50000000n ? e.max - 50000000n : 0n)}.`;
   if (c === "FEE" || /insufficient|not enough|fee/i.test(m)) return `Not enough for this and the network fee. (${m})`;
   if (/Failed to fetch|NetworkError|timed out|ECONNREFUSED|connection/i.test(m)) return "The Kaspa network could not be reached. Check your connection and try again.";
   return m.charAt(0).toUpperCase() + m.slice(1);
@@ -9123,9 +9127,10 @@ var KaspaVault = class extends HTMLElement {
                 <label class="kv-label">Same password again</label><input class="kv-input" type="password" name="pw2" autocomplete="new-password">
                 <div class="kv-err" data-err>${esc(st.err || "")}</div>
                 <button class="kv-btn" data-act="setup-password" data-enter data-need="pw1,pw2">Make my vault's wallet</button>` : st.sub === "words" ? `
-                <p>These 12 words are your vault's wallet. Write them on paper, in this order. With them, any Kaspa wallet app (Kasware, Kastle, Kaspium) opens it, even if this website is gone.</p>
+                <p>These 12 words are your vault's wallet. Write them down or save them somewhere private, in this order. With them, any Kaspa wallet app (Kasware, Kastle, Kaspium) opens it, even if this website is gone.</p>
                 <div class="kv-words">${this.#draft.words.split(" ").map((w) => `<span>${esc(w)}</span>`).join("")}</div>
-                <label class="kv-check"><input type="checkbox" name="wrote"><span>I wrote the 12 words down on paper. Nobody else has them.</span></label>
+                <p class="kv-center"><button class="kv-link" data-act="copy-draft-words">Copy the words</button></p>
+                <label class="kv-check"><input type="checkbox" name="wrote"><span>I saved the 12 words somewhere only I can reach. Anyone who has them can start a withdrawal.</span></label>
                 <button class="kv-btn" data-act="setup-words" data-need="wrote">Next</button>` : `
                 <p>Just to be sure they are written correctly:</p>
                 <div class="kv-quiz">
@@ -9177,8 +9182,8 @@ var KaspaVault = class extends HTMLElement {
     return `
         <div class="kv-card">
             <h2>Open your vault in this browser</h2>
-            <p class="kv-muted">You need the vault card (the file you downloaded, kaspa-vault-card-\u2026.json) and your 12 recovery words.</p>
-            <label class="kv-label">Vault card</label>
+            <p class="kv-muted">Choose your backup file (kaspa-vault-backup-\u2026.json), or your vault card and then type your 12 recovery words.</p>
+            <label class="kv-label">Backup file or vault card</label>
             <input class="kv-input" type="file" name="cardFile" accept=".json,application/json" data-act-change="restore-file">
             ${info ? `<dl class="kv-kv">
                 <dt>Vault</dt><dd>${esc(info.vaultAddress)}</dd>
@@ -9208,7 +9213,7 @@ var KaspaVault = class extends HTMLElement {
     if (this.s.guardianProblem) banners += `<div class="kv-banner">${icon.bell}<div><b>This page's watcher can't be confirmed</b>${esc(this.s.guardianProblem)}</div></div>`;
     else if (g && g.pubkey !== rec.card.keys.guardian) banners += `<div class="kv-banner">${icon.bell}<div><b>This page's watcher does not guard your vault</b>Your vault names key ${esc(rec.card.keys.guardian.slice(0, 12))}\u2026; the watcher here answers with ${esc(g.pubkey.slice(0, 12))}\u2026. Alerts and rescues come only from your vault's own watcher.</div></div>`;
     const mustSave = rec.cardSaved === false;
-    if (mustSave) banners += `<div class="kv-banner">${icon.bell}<div><b>Save your vault card before you put money in</b>Your 12 words open the wallet; the vault card tells any Kaspa tool where your vault is and who guards it. Without it, words alone can't find the vault if this browser forgets it.<br><button class="kv-btn kv-btn-small" data-act="card">Download vault card</button></div></div>`;
+    if (mustSave) banners += `<div class="kv-banner">${icon.bell}<div><b>Save your backup before you put money in</b>The words open the wallet; the vault card tells any Kaspa tool where your vault is and who guards it. Words alone can't find the vault if this browser forgets it. The backup file holds both; keep it private.<br><button class="kv-btn kv-btn-small" data-act="backup">Download backup file</button> <button class="kv-link" data-act="card">or the vault card only</button></div></div>`;
     if (this.s.nodeDown) banners += `<div class="kv-banner">${icon.bell}<div><b>The Kaspa network can't be reached</b>Balances may be out of date. Retrying.</div></div>`;
     if (!snap) return banners + `<div class="kv-card kv-center kv-muted">Reading your vault\u2026</div>`;
     const b = snap.balances;
@@ -9236,7 +9241,7 @@ var KaspaVault = class extends HTMLElement {
             </div>
         </div>
         <div class="kv-card">
-            <div class="kv-spend"><div class="kv-spend-t"><b>Spending wallet</b><span class="kv-muted">Money comes into the vault from here, and goes back here.</span></div>
+            <div class="kv-spend"><div class="kv-spend-t"><b>Spending wallet</b><span class="kv-muted">Withdrawals from the vault land here, ready to spend.</span></div>
                 <div class="kv-spend-amt">${esc(kas(b.hot))}</div></div>
             <div class="kv-spend-btns">
                 <button class="kv-btn kv-btn-line kv-btn-small" data-act="sheet" data-sheet="receive">Receive</button>
@@ -9246,7 +9251,7 @@ var KaspaVault = class extends HTMLElement {
         <div class="kv-card">
             <h2>What's inside</h2>
             <p class="kv-muted" style="margin-bottom:6px">Taking money out always takes ${esc(day)}. Each deposit comes out whole.</p>
-            ${rows || (snap.pending.length ? `<div class="kv-empty">The vault is empty right now. What is on its way out is shown at the top.</div>` : `<div class="kv-empty">Nothing in the vault yet. Put KAS in your spending wallet (Receive), then press "Add money".</div>`)}
+            ${rows || (snap.pending.length ? `<div class="kv-empty">The vault is empty right now. What is on its way out is shown at the top.</div>` : `<div class="kv-empty">Nothing in the vault yet. Press "Add money": straight from Kasware, or from any wallet or exchange to your vault address.</div>`)}
         </div>
         <div class="kv-foot">
             <button class="kv-link" data-act="sheet" data-sheet="how">How it's protected</button>
@@ -9269,15 +9274,31 @@ var KaspaVault = class extends HTMLElement {
     let h = "";
     if (sh.kind === "add") {
       const spend = snap ? snap.balances.hot : 0n;
-      h = spend > 0n ? `
-                <h3>Add money to your vault</h3><p class="kv-muted">From your spending wallet \xB7 ${esc(kas(spend))} there</p>
+      const ks = canSendFrom().length > 0;
+      const way = sh.way || (ks ? "kasware" : spend > 0n ? "spending" : "address");
+      const tabs = [ks && ["kasware", "From Kasware"], ["address", "Any wallet or exchange"], spend > 0n && ["spending", "From spending wallet"]].filter(Boolean);
+      const alertNote = this.s.watched ? "" : `<div class="kv-warn">Alerts are not on yet. Confirm the email from the watcher first, or nobody will tell you when a withdrawal starts.</div>`;
+      const note = `<div class="kv-note">Taking it out again takes <b>${esc(dayWord(info.delayDaa))}</b>, and you get an email when it starts.</div>`;
+      let body = "";
+      if (way === "kasware") body = `
+                <p class="kv-muted">Kasware sends it straight into your vault. It asks you to approve.</p>
+                <div class="kv-amt-in"><input name="ksAmount" inputmode="decimal" placeholder="0" autocomplete="off" autofocus><span>KAS</span></div>
+                ${note}${err}
+                <button class="kv-btn" data-act="do-kasware" data-enter data-need="ksAmount" ${sh.busy ? "disabled" : ""}>${busyLabel("Send from Kasware")}</button>`;
+      else if (way === "address") body = `
+                <p class="kv-muted">Send KAS to your vault's own address, from any Kaspa wallet or exchange. It shows up here once the network confirms it.</p>
+                <div class="kv-qr"><div class="kv-qr-box">${qrSvg(info.vaultAddress)}</div><div class="kv-mono">${esc(info.vaultAddress)}</div></div>
+                <button class="kv-btn kv-btn-line" data-act="copy" data-text="${esc(info.vaultAddress)}">Copy vault address</button>
+                ${note}`;
+      else body = `
+                <p class="kv-muted">${esc(kas(spend))} in your spending wallet</p>
                 <div class="kv-amt-in"><input name="amount" inputmode="decimal" placeholder="0" autocomplete="off" autofocus><span>KAS</span></div>
                 <div class="kv-amt-row"><span class="kv-muted" data-hint></span><button class="kv-btn kv-btn-line kv-btn-small" data-act="amount-all">All of it</button></div>
-                <div class="kv-note">Taking it out again takes <b>${esc(dayWord(info.delayDaa))}</b>, and you get an email when it starts.</div>
-                ${this.#pw()}${err}
-                <button class="kv-btn" data-act="do-add" data-enter data-need="amount${this.#locked() ? ",password" : ""}" ${sh.busy ? "disabled" : ""}>${busyLabel("Add to vault")}</button>${close()}` : `<h3>Add money to your vault</h3><p class="kv-muted">Your spending wallet is empty.</p>
-                <div class="kv-note">Money goes into the vault from your spending wallet. Send KAS there first, from any wallet or exchange.</div>
-                <button class="kv-btn" data-act="sheet" data-sheet="receive">Show my spending wallet</button>${close()}`;
+                ${note}${this.#pw()}${err}
+                <button class="kv-btn" data-act="do-add" data-enter data-need="amount${this.#locked() ? ",password" : ""}" ${sh.busy ? "disabled" : ""}>${busyLabel("Add to vault")}</button>`;
+      h = `<h3>Add money to your vault</h3>
+                ${tabs.length > 1 ? `<div class="kv-tabs">${tabs.map(([k, l]) => `<button class="kv-tab ${k === way ? "kv-tab-on" : ""}" data-act="add-way" data-way="${k}">${l}</button>`).join("")}</div>` : ""}
+                ${alertNote}${body}${close(way === "address" ? "Close" : "Cancel")}`;
     } else if (sh.kind === "out") {
       const coins = sh.coins || [];
       h = `<h3>Take money out</h3><p class="kv-muted">It lands in your spending wallet after ${esc(dayWord(info.delayDaa))}.</p>
@@ -9288,7 +9309,7 @@ var KaspaVault = class extends HTMLElement {
     } else if (sh.kind === "receive") {
       const addr = info.hotAddress;
       const ks = canSendFrom();
-      h = `<h3>Your spending wallet</h3><p class="kv-muted">Send KAS here from any wallet or exchange. Then move it into the vault with "Add money".</p>
+      h = `<h3>Your spending wallet</h3><p class="kv-muted">Withdrawals from the vault land here, ready to spend. You can also send KAS here from any wallet or exchange.</p>
                 <div class="kv-qr"><div class="kv-qr-box">${qrSvg(addr)}</div><div class="kv-mono">${esc(addr)}</div></div>
                 <button class="kv-btn kv-btn-line" data-act="copy" data-text="${esc(addr)}">Copy address</button>
                 ${ks.length ? `<div class="kv-note"><b>From Kasware on this browser:</b>
@@ -9314,7 +9335,9 @@ var KaspaVault = class extends HTMLElement {
                 <button class="kv-btn" data-act="do-alerts" data-enter data-need="email${this.#locked() ? ",password" : ""}" ${sh.busy ? "disabled" : ""}>${busyLabel("Send the confirmation link")}</button>${close()}`;
     } else if (sh.kind === "words") {
       h = sh.showing && this.#shown ? `<h3>Your recovery words</h3><p class="kv-muted">They open your vault's wallet in any Kaspa wallet app. Never type them into a website you don't trust.</p>
-                <div class="kv-words">${this.#shown.split(" ").map((w) => `<span>${esc(w)}</span>`).join("")}</div>${close("Hide")}` : `<h3>Show recovery words</h3><p class="kv-muted">Make sure nobody can see your screen.</p>
+                <div class="kv-words">${this.#shown.split(" ").map((w) => `<span>${esc(w)}</span>`).join("")}</div>
+                <div class="kv-row2"><button class="kv-btn kv-btn-line" data-act="copy-words">Copy words</button><button class="kv-btn kv-btn-line" data-act="backup">Download backup file</button></div>
+                <p class="kv-muted kv-gap">The backup file holds the words and the vault card together: everything needed to open this vault anywhere. Keep it as private as the words.</p>${close("Hide")}` : `<h3>Show recovery words</h3><p class="kv-muted">Make sure nobody can see your screen.</p>
                 ${this.#pw(true)}${err}<button class="kv-btn" data-act="do-words" data-enter data-need="password">Show</button>${close()}`;
     } else if (sh.kind === "check") {
       h = this.#checkHtml() + close("Close");
@@ -9371,7 +9394,10 @@ var KaspaVault = class extends HTMLElement {
       const i = v.indexOf(".");
       const clean3 = i < 0 ? v : v.slice(0, i + 1) + v.slice(i + 1).replace(/\./g, "").slice(0, 8);
       if (clean3 !== t.value) t.value = clean3;
-      if (this.s.sheet) this.s.sheet.all = false;
+      if (this.s.sheet) {
+        this.s.sheet.all = false;
+        if (this.s.sheet.err) this.#setErr("");
+      }
       this.#hint();
     }
     if (t.type === "file" && t.dataset.actChange === "restore-file") this.#restoreFile(t);
@@ -9381,7 +9407,7 @@ var KaspaVault = class extends HTMLElement {
     const el = this.#root.querySelector("[data-hint]"), a = this.#root.querySelector("[name=amount]");
     if (!el || !a) return;
     const v = parseKas(a.value), have = this.s.snap ? this.s.snap.balances.hot : 0n;
-    el.textContent = this.s.sheet && this.s.sheet.all ? "Everything in your spending wallet at the moment you press the button; the network fee comes out of it" : v && v > have ? "More than your spending wallet holds" : "";
+    el.textContent = this.s.sheet && this.s.sheet.all ? "Everything there, minus the network fee" : v && v > have ? "More than your spending wallet holds" : "";
   }
   #syncButtons() {
     this.#root.querySelectorAll("[data-need]").forEach((b) => {
@@ -9549,6 +9575,34 @@ code: ${randomHex(8)}` });
         }
         return;
       }
+      case "copy-draft-words":
+      case "copy-words": {
+        const w = act === "copy-draft-words" ? this.#draft && this.#draft.words : this.#shown;
+        try {
+          await navigator.clipboard.writeText(w);
+          this.#toast("Words copied. Paste them somewhere private.");
+        } catch (e) {
+          this.#toast("Copy did not work; write them down instead", true);
+        }
+        return;
+      }
+      case "backup": {
+        const words = this.#shown || !this.#locked() && this.#secret.words;
+        if (!words) return this.#openSheet("words");
+        const c = s.rec.card;
+        download(`kaspa-vault-backup-${s.opened.info.vaultAddress.split(":")[1].slice(0, 8)}.json`, JSON.stringify({
+          format: "kaspa-vault-backup/1",
+          warning: "PRIVATE. Anyone with these words can start withdrawals from this vault (the waiting time and the watcher still protect it). Keep this file as safe as the words.",
+          words,
+          card: c,
+          howToOpen: 'kaspavault.com -> "I already have a vault" -> choose this file. Or import the words in Kasware/Kastle/Kaspium and use the card with any Kaspa tool.'
+        }, null, 2));
+        if (s.rec.cardSaved === false) {
+          s.rec.cardSaved = true;
+          this.#save(s.rec);
+        }
+        return this.#toast("Backup file saved. Keep it private.");
+      }
       case "card": {
         const c = s.rec.card;
         download(`kaspa-vault-card-${s.opened.info.vaultAddress.split(":")[1].slice(0, 8)}.json`, JSON.stringify(c, null, 2));
@@ -9565,6 +9619,7 @@ code: ${randomHex(8)}` });
       }
       case "amount-all": {
         s.sheet.all = true;
+        this.#setErr("");
         const a = this.#root.querySelector("[name=amount]");
         if (a) {
           a.value = kas(s.snap.balances.hot, false).replace(/,/g, "");
@@ -9575,6 +9630,11 @@ code: ${randomHex(8)}` });
       }
       case "do-add":
         return this.#doAdd();
+      case "add-way":
+        s.sheet.way = el.dataset.way;
+        s.sheet.err = "";
+        s.sheet.all = false;
+        return this.#paint();
       case "do-out":
         return this.#doOut();
       case "do-send":
@@ -9676,13 +9736,20 @@ code: ${randomHex(8)}` });
     r.card = null;
     r.info = null;
     try {
-      const card = JSON.parse(await input.files[0].text());
+      const file = JSON.parse(await input.files[0].text());
+      const card = file && file.format === "kaspa-vault-backup/1" ? file.card : file;
       r.info = openCard(card).info;
       r.card = card;
+      r.words = file && file.format === "kaspa-vault-backup/1" && typeof file.words === "string" ? file.words : null;
     } catch (e) {
-      r.err = "That file is not a vault card: " + e.message;
+      r.err = "That file is not a vault card or backup file: " + e.message;
     }
     this.#paint();
+    const t = this.#root.querySelector("[name=words]");
+    if (t && r.words) {
+      t.value = r.words;
+      this.#syncButtons();
+    }
   }
   async #restoreGo() {
     const r = this.s.restore;
@@ -9798,9 +9865,10 @@ code: ${randomHex(8)}` });
     if (!amount) return this.#setErr("Enter the amount as a plain number.");
     this.#sheetBusy("Waiting for Kasware\u2026");
     try {
-      await sendFrom("kasware", this.s.opened.info.hotAddress, amount);
+      const toVault = this.s.sheet.kind === "add";
+      await sendFrom("kasware", toVault ? this.s.opened.info.vaultAddress : this.s.opened.info.hotAddress, amount);
       this.s.sheet = null;
-      this.#toast(`${kas(amount)} sent from Kasware. It shows up here within a few seconds.`);
+      this.#toast(`${kas(amount)} sent from Kasware ${toVault ? "into your vault" : "to your spending wallet"}. It shows up here within a few seconds.`);
       setTimeout(() => this.refresh(), 3e3);
     } catch (e) {
       this.s.sheet.busy = null;

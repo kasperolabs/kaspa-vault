@@ -46,7 +46,7 @@ a { color: inherit; }
 .kv-btn-line:hover:not(:disabled) { background: var(--kv-accent-soft); filter: none; }
 .kv-btn-quiet { background: transparent; border-color: transparent; color: var(--kv-muted); font-weight: 500; }
 .kv-btn-quiet:hover:not(:disabled) { color: var(--kv-ink); filter: none; }
-.kv-btn-small { width: auto; padding: 8px 14px; font-size: 14px; border-radius: 10px; }
+.kv-btn-small { white-space: nowrap; flex: none; width: auto; padding: 8px 14px; font-size: 14px; border-radius: 10px; }
 .kv-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
 .kv-link { background: none; border: 0; padding: 0; color: var(--kv-muted); font-size: 13px; cursor: pointer; text-decoration: none; }
 .kv-link:hover { color: var(--kv-accent); text-decoration: underline; }
@@ -144,6 +144,9 @@ a { color: inherit; }
 .kv-amt-in input { font: inherit; font-size: 34px; font-weight: 700; border: 0; outline: 0; width: 100%; color: var(--kv-ink); background: transparent; font-variant-numeric: tabular-nums; }
 .kv-amt-in span { font-size: 18px; color: var(--kv-muted); font-weight: 600; }
 .kv-amt-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 26px; margin-bottom: 10px; }
+.kv-tabs { display: flex; gap: 6px; background: var(--kv-bg); border-radius: 12px; padding: 4px; margin: 10px 0 12px; }
+.kv-tab { flex: 1; border: 0; background: transparent; border-radius: 9px; padding: 8px 6px; font-size: 13px; font-weight: 600; color: var(--kv-muted); cursor: pointer; }
+.kv-tab-on { background: #fff; color: var(--kv-ink); box-shadow: 0 1px 3px rgba(15,23,42,.12); }
 .kv-note { font-size: 14px; line-height: 1.5; background: var(--kv-bg); border-radius: 12px; padding: 12px 14px; margin: 10px 0; }
 .kv-note b { color: var(--kv-ink); }
 .kv-pick { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; max-height: 40vh; overflow: auto; }
