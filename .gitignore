@@ -1,4 +1,8 @@
 silverc
 node_modules/
+watcher/node_modules/
+watcher/.env
+watcher/data/
+try-vault.json
 test/engine/standalone/target/
 test/engine/standalone/Cargo.lock

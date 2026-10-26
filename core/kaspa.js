@@ -144,6 +144,21 @@ export function schnorrVerify(sig65Hex, sighash, xonlyHex) {
     if (s.length !== 65 || s[64] !== SIGHASH_ALL) return false;
     return secp.schnorr.verify(s.slice(0, 64), sighash, hexToBytes(xonlyHex));
 }
+// ---------- personal messages (Kaspa's signMessage, as Kasware/Kastle/Kaspire use it) ----------
+// hash = blake2b-256 keyed "PersonalMessageSigningHash" over the UTF-8 text; BIP340 Schnorr over it.
+export function messageHash(text) { return new Hasher('PersonalMessageSigningHash').update(enc.encode(String(text))).finalize(); }
+/** Returns the 64-byte signature as hex. `auxRand` only for test vectors. */
+export function signMessage(text, privHex, auxRand) {
+    return bytesToHex(secp.schnorr.sign(messageHash(text), hexToBytes(privHex), auxRand));
+}
+export function verifyMessage(text, sigHex, xonlyHex) {
+    try {
+        const s = hexToBytes(sigHex);
+        if (s.length !== 64) return false;
+        return secp.schnorr.verify(s, messageHash(text), hexToBytes(xonlyHex));
+    } catch (e) { return false; }
+}
+
 /** The signature script of a plain P2PK (Schnorr) input: one push of the 65-byte signature. */
 export function p2pkSignatureScript(sig65Hex) { return '41' + sig65Hex; }
 

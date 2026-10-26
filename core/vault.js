@@ -58,7 +58,7 @@ export class VaultClient {
         const coins = hotCoins || await this.provider.coins([this.info.hotAddress]);
         const built = S.payment({ coins, from: this.info.hotAddress, to: this.info.vaultAddress, amount: amount != null ? BigInt(amount) : undefined, all, feeRate: await this.feeRate() });
         const signed = await S.sign(built, signer);
-        const txid = await this.provider.submit(signed.tx);
+        const txid = await this.provider.submit(signed.tx, signed.entries);
         return { txid, amount: signed.amountOut, fee: signed.fee };
     }
 
@@ -79,7 +79,7 @@ export class VaultClient {
             try {
                 const built = S.covenantSpend({ manifest: this.manifests.vault, entry: 'open', coins: group, daa, feeRate, airlockAddress: this.info.airlockAddress });
                 const signed = await S.sign(built, { hotSig: signer });
-                const txid = await this.provider.submit(signed.tx);
+                const txid = await this.provider.submit(signed.tx, signed.entries);
                 started.push({ txid, amount: signed.amountOut, fee: signed.fee, coins: group });
             } catch (e) { failed.push({ coins: group, error: e.message, code: e.code }); }
         }
@@ -107,7 +107,7 @@ export class VaultClient {
             try {
                 const built = S.covenantSpend({ manifest: this.manifests.airlock, entry: 'release', coins: [p.coin], daa: snap.daa, feeRate });
                 const signed = await S.sign(built, {});
-                done.push({ txid: await this.provider.submit(signed.tx), amount: signed.amountOut, coin: p.coin });
+                done.push({ txid: await this.provider.submit(signed.tx, signed.entries), amount: signed.amountOut, coin: p.coin });
             } catch (e) {
                 if (e.code === 'SPENT') continue;            // someone (the watcher, another tab) released it first
                 failed.push({ coin: p.coin, error: e.message, code: e.code });
@@ -127,7 +127,7 @@ export class VaultClient {
             try {
                 const built = S.covenantSpend({ manifest: this.manifests.vault, entry: 'merge', coins: group, daa: snap.daa, feeRate });
                 const signed = await S.sign(built, { hotSig: signer });
-                merged.push({ txid: await this.provider.submit(signed.tx), amount: signed.amountOut, coins: group });
+                merged.push({ txid: await this.provider.submit(signed.tx, signed.entries), amount: signed.amountOut, coins: group });
             } catch (e) { failed.push({ coins: group, error: e.message, code: e.code }); }
         }
         return { merged, failed };
@@ -137,7 +137,7 @@ export class VaultClient {
         const coins = await this.provider.coins([this.info.hotAddress]);
         const built = S.payment({ coins, from: this.info.hotAddress, to, amount: amount != null ? BigInt(amount) : undefined, all, feeRate: await this.feeRate() });
         const signed = await S.sign(built, signer);
-        return { txid: await this.provider.submit(signed.tx), amount: signed.amountOut, fee: signed.fee };
+        return { txid: await this.provider.submit(signed.tx, signed.entries), amount: signed.amountOut, fee: signed.fee };
     }
 
     // ---- the guardian's paths (the watcher calls these; the contracts only let them pay the backup wallet) ----
@@ -160,7 +160,7 @@ export class VaultClient {
                 const built = S.covenantSpend({ manifest, entry, coins: group, daa: snap.daa, feeRate });
                 if (built.destination !== this.info.rescueAddress) throw fail('BAD_ENTRY', `${entry} would pay ${built.destination}, not the backup wallet`);
                 const signed = await S.sign(built, { guardianSig: guardian });
-                moved.push({ entry, txid: await this.provider.submit(signed.tx), amount: signed.amountOut, coins: group });
+                moved.push({ entry, txid: await this.provider.submit(signed.tx, signed.entries), amount: signed.amountOut, coins: group });
             } catch (e) {
                 if (e.code === 'SPENT') continue;
                 failed.push({ entry, coins: group, error: e.message, code: e.code });

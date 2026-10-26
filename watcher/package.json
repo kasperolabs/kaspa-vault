@@ -1,0 +1,11 @@
+{
+  "name": "kaspa-vault-watcher",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The guardian for kaspa-vault: emails on every withdrawal, moves everything to the owner's backup wallet on request, releases matured withdrawals. Runs on a server that is not the site's.",
+  "main": "server.js",
+  "scripts": { "start": "node server.js", "gen-key": "node gen-key.js", "rescue": "node rescue.js", "check": "node node-check.js" },
+  "engines": { "node": ">=18" },
+  "dependencies": { "nodemailer": "10.2.1", "ws": "8.22.0" }
+}

@@ -110,4 +110,36 @@ export function restProvider({ url = DEFAULT_URL, fetch: f } = {}) {
     };
 }
 
+/**
+ * Several providers, tried in order. A read or a submit moves to the next provider only when the
+ * current one could not be reached (a connection error, a timeout, a 5xx); an answer from a node,
+ * including a refusal, is final, so a bad transaction is not shopped around.
+ */
+export function fallbackProvider(providers, { onSwitch } = {}) {
+    const list = providers.filter(Boolean);
+    if (!list.length) throw new Error('fallbackProvider: no providers');
+    const unreachable = e => !e.code || e.code === 'REJECTED' && /timed out|no answer|unreachable|connection|ECONN|ENOTFOUND|EAI_AGAIN|socket|fetch failed|HTTP 5\d\d|abort/i.test(e.message) || (e.status >= 500);
+    async function first(method, args) {
+        let lastErr = null;
+        for (let i = 0; i < list.length; i++) {
+            try {
+                const r = await list[i][method](...args);
+                if (i > 0 && onSwitch) onSwitch(list[i].name, lastErr);
+                return r;
+            } catch (e) {
+                lastErr = e;
+                if (!unreachable(e)) throw e;
+            }
+        }
+        throw lastErr;
+    }
+    return {
+        name: list.map(p => p.name).join(' > '),
+        coins: (...a) => first('coins', a),
+        virtualDaa: (...a) => first('virtualDaa', a),
+        feeRate: (...a) => first('feeRate', a),
+        submit: (...a) => first('submit', a)
+    };
+}
+
 export { stringify as jsonWithBigInt };

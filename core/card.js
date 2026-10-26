@@ -49,3 +49,19 @@ export function manifestFiles({ vault, airlock }) {
     ];
 }
 
+
+/**
+ * The text a vault's hot key signs to ask a watcher to watch it (Kaspa personal-message signing,
+ * core/kaspa.js signMessage). The watcher rebuilds the same text and checks the signature against
+ * the card's hot key, so only whoever holds the vault's own key can register it, and only for the
+ * watcher, vault, email and time written here.
+ */
+export function registrationMessage({ guardian, vaultAddress, email, time }) {
+    return [
+        'kaspa-vault: watch this vault',
+        `watcher: ${String(guardian).toLowerCase()}`,
+        `vault: ${String(vaultAddress).toLowerCase()}`,
+        `email: ${String(email).trim().toLowerCase()}`,
+        `time: ${time}`
+    ].join('\n');
+}

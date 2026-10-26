@@ -247,7 +247,7 @@ export async function sign(built, signers) {
             out.inputs[i].signatureScript = ksm.signatureScript(plan, sigs);
         }
     }
-    return { tx: out, txid: K.transactionId(out), fee: built.fee, amountOut: built.amountOut, destination: built.destination };
+    return { tx: out, entries, txid: K.transactionId(out), fee: built.fee, amountOut: built.amountOut, destination: built.destination };
 }
 
 function normSig(s) {
