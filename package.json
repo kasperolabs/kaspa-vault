@@ -1,0 +1,22 @@
+{
+  "name": "kaspa-vault",
+  "version": "0.1.0",
+  "description": "A savings vault for Kaspa: covenants that only release after a delay, a watcher that alerts and rescues, and a drop-in widget.",
+  "main": "core/contracts.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "build:templates": "node tools/build-templates.js",
+    "test:equality": "node test/compiler-equality.js 500",
+    "test:engine": "tools/engine-test.sh"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "kaspa-ksm": "1.0.2"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,65 @@
+// Compiled on silverc v1 (kaspanet/silverscript 3ed9733) and every path run on the Kaspa script engine, Oct 21, 2026 (tests/kasla_vault_tests.rs, 33 cases). Not yet spent on mainnet.
+pragma silverscript ^0.1.0;
+
+// Vault v1 (Kasla vault, part 1 of 2). Kaspero Labs.
+//
+// The savings coins. Kasla's own key can only push them into the Airlock, where they wait out
+// the alert window (24h). Nothing else leaves except toward the user's rescue wallet.
+//
+//   open(sig)       hot. Every input is this Vault (up to MAX_INS coins), exactly one output:
+//                   the Airlock, carrying the inputs' total minus at most MAX_FEE.
+//   merge(sig)      hot. Same shape, the one output is this Vault again (folds deposits).
+//   evacuate(sig)   guardian. Same shape, the one output is `rescue`. The "not you?" click:
+//                   the watcher empties the whole Vault into the throwaway wallet so an attacker
+//                   holding the hot key has nothing left to open. Delete this entry if you want
+//                   the watcher limited to coins already mid-withdrawal (see VAULT.md).
+//
+// airlockHash = blake2b-256 of the user's Airlock redeem script. Compile the Airlock FIRST,
+// then the Vault with its hash. The Airlock never refers back to the Vault, so there is no cycle.
+
+contract Vault(pubkey hot, pubkey guardian, pubkey rescue, byte[32] airlockHash) {
+    int constant MAX_FEE = 1000000; // 0.01 KAS
+    int constant MAX_INS = 8;
+
+    entry open(sig hotSig) {
+        require(checkSig(hotSig, hot));
+        require(tx.inputs.length <= MAX_INS);
+        require(tx.outputs.length == 1);
+        byte[] own = tx.inputs[this.activeInputIndex].scriptPubKey;
+        int total = 0;
+        for(i, 0, tx.inputs.length, MAX_INS) {
+            require(tx.inputs[i].scriptPubKey == own);
+            total = total + tx.inputs[i].value;
+        }
+        require(tx.outputs[0].scriptPubKey == byte[](new ScriptPubKeyP2SH(airlockHash)));
+        require(tx.outputs[0].value >= total - MAX_FEE);
+    }
+
+    entry merge(sig hotSig) {
+        require(checkSig(hotSig, hot));
+        require(tx.inputs.length <= MAX_INS);
+        require(tx.outputs.length == 1);
+        byte[] own = tx.inputs[this.activeInputIndex].scriptPubKey;
+        int total = 0;
+        for(i, 0, tx.inputs.length, MAX_INS) {
+            require(tx.inputs[i].scriptPubKey == own);
+            total = total + tx.inputs[i].value;
+        }
+        require(tx.outputs[0].scriptPubKey == own);
+        require(tx.outputs[0].value >= total - MAX_FEE);
+    }
+
+    entry evacuate(sig guardianSig) {
+        require(checkSig(guardianSig, guardian));
+        require(tx.inputs.length <= MAX_INS);
+        require(tx.outputs.length == 1);
+        byte[] own = tx.inputs[this.activeInputIndex].scriptPubKey;
+        int total = 0;
+        for(i, 0, tx.inputs.length, MAX_INS) {
+            require(tx.inputs[i].scriptPubKey == own);
+            total = total + tx.inputs[i].value;
+        }
+        require(tx.outputs[0].scriptPubKey == byte[](new ScriptPubKeyP2PK(rescue)));
+        require(tx.outputs[0].value >= total - MAX_FEE);
+    }
+}

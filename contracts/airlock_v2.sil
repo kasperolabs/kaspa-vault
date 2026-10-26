@@ -1,0 +1,50 @@
+// Compiled on silverc v1 (kaspanet/silverscript 3ed9733) and every path run on the Kaspa script engine, Oct 21, 2026 (tests/kasla_vault_tests.rs, 33 cases). Not yet spent on mainnet.
+pragma silverscript ^0.1.0;
+
+// Airlock v2 (Kasla vault, part 2 of 2). Kaspero Labs.
+//
+// The waiting room between the Vault and Kasla checking. Coins arrive here only through
+// Vault.open. The alert window is the coin's age: nothing reaches checking until `delay` DAA
+// have passed. Before that, the only way out is the user's rescue wallet.
+//
+//   release()          NO signature, once the coin is `delay` DAA old. One input, one output:
+//                      everything to `hot` (the user's Kasla checking key), minus at most MAX_FEE.
+//                      Fixed destination, so Kasla's cron completes it without another approval.
+//   rescue(sig)        guardian, any time. Every input is this Airlock (up to MAX_INS coins),
+//                      exactly one output: everything to `rescue`, minus at most MAX_FEE.
+//                      The guardian can stop a withdrawal but can never receive a coin.
+//
+// hot      = Kasla hosted key (checking). Compromise of Kasla = compromise of this key.
+// guardian = the watcher's key, on a server that is not Kasla's. Safe to keep hot: it can only
+//            send to `rescue`.
+// rescue   = the user's throwaway wallet, connected once on the vault page. Receives only; it
+//            never signs anything. Any wallet works, including ones that cannot sign P2SH.
+// delay    = DAA blocks: 24h = 864,000; 48h = 1,728,000; 72h = 2,592,000.
+
+contract Airlock(pubkey hot, pubkey guardian, pubkey rescue, int delay) {
+    int constant MAX_FEE = 1000000; // 0.01 KAS
+    int constant MAX_INS = 8;
+
+    entry release() {
+        require(this.ageDaa >= delay);
+        require(tx.inputs.length == 1);
+        require(tx.outputs.length == 1);
+        int current = tx.inputs[this.activeInputIndex].value;
+        require(tx.outputs[0].scriptPubKey == byte[](new ScriptPubKeyP2PK(hot)));
+        require(tx.outputs[0].value >= current - MAX_FEE);
+    }
+
+    entry rescue(sig guardianSig) {
+        require(checkSig(guardianSig, guardian));
+        require(tx.inputs.length <= MAX_INS);
+        require(tx.outputs.length == 1);
+        byte[] own = tx.inputs[this.activeInputIndex].scriptPubKey;
+        int total = 0;
+        for(i, 0, tx.inputs.length, MAX_INS) {
+            require(tx.inputs[i].scriptPubKey == own);
+            total = total + tx.inputs[i].value;
+        }
+        require(tx.outputs[0].scriptPubKey == byte[](new ScriptPubKeyP2PK(rescue)));
+        require(tx.outputs[0].value >= total - MAX_FEE);
+    }
+}
