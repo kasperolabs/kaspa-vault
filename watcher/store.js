@@ -57,6 +57,13 @@ export function openStore(dir) {
         pending: t => { sweep(); const r = pending[hash(t)]; return r && r.expiresAt >= now() ? r : null; },
         takePending(t) { const k = hash(t); const r = pending[k]; delete pending[k]; save('pending.json', pending); return r || null; },
         pendingCount: () => { sweep(); return Object.keys(pending).length; },
+        /** Drop unconfirmed requests for this vault and email (a fresh link replaces them). */
+        dropPendingFor(vaultAddress, email) {
+            let n = 0;
+            for (const [k, p] of Object.entries(pending)) if (p.vaultAddress === vaultAddress && p.email === email) { delete pending[k]; n++; }
+            if (n) save('pending.json', pending);
+            return n;
+        },
         pendingFor: (vaultAddress, email) => Object.values(pending).filter(p => p.vaultAddress === vaultAddress && p.email === email && p.expiresAt >= now()).length,
 
         // ---- one-time links ----

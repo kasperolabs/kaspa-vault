@@ -74,7 +74,12 @@ export function createWatcher({ cfg, provider, mailer, store, log = console }) {
 
         const existing = store.vault(info.vaultAddress);
         if (existing && existing.subscribers.some(s => s.email === email)) return { status: 'watching', vaultAddress: info.vaultAddress };
-        if (store.pendingFor(info.vaultAddress, email)) return { status: 'pending', vaultAddress: info.vaultAddress, note: 'A confirmation email is already on its way' };
+        // asked again before confirming: a new link replaces the old one (the first may never have
+        // arrived), at most 3 an hour for one vault and address
+        if (store.pendingFor(info.vaultAddress, email)) {
+            if (limited(`resend:${info.vaultAddress}:${email}`, 3, 3600000)) return { status: 'pending', vaultAddress: info.vaultAddress, note: 'A confirmation email is already on its way' };
+            store.dropPendingFor(info.vaultAddress, email);
+        }
         if (existing && existing.subscribers.length >= cfg.limits.subscribersPerVault) throw fail(409, 'FULL', 'This vault already has the most email addresses this watcher allows');
         if (!existing && store.watched().length >= cfg.limits.vaults) { mailer.admin('vault limit reached', `MAX_VAULTS ${cfg.limits.vaults} reached; a registration was refused`); throw fail(503, 'FULL', 'This watcher is full right now'); }
         if (store.vaultsOfEmail(email).length >= cfg.limits.vaultsPerEmail) throw fail(409, 'FULL', 'This email address already watches the most vaults allowed');
